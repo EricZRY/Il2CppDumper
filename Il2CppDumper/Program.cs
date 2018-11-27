@@ -4,7 +4,6 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Windows.Forms;
 using System.Web.Script.Serialization;
 using static Il2CppDumper.DefineConstants;
 
@@ -21,18 +20,14 @@ namespace Il2CppDumper
         static void Main(string[] args)
         {
             config = File.Exists("config.json") ? new JavaScriptSerializer().Deserialize<Config>(File.ReadAllText("config.json")) : new Config();
-            var ofd = new OpenFileDialog();
-            ofd.Filter = "Il2Cpp binary file|*.*";
-            if (ofd.ShowDialog() == DialogResult.OK)
+            ArgParser ofd = new ArgParser(args);
+            if (ofd.Valid)
             {
                 var il2cppfile = File.ReadAllBytes(ofd.FileName);
-                ofd.Filter = "global-metadata|global-metadata.dat";
-                if (ofd.ShowDialog() == DialogResult.OK)
-                {
-                    try
+                try
                     {
                         Console.WriteLine("Initializing metadata...");
-                        metadata = new Metadata(new MemoryStream(File.ReadAllBytes(ofd.FileName)));
+                        metadata = new Metadata(new MemoryStream(File.ReadAllBytes(ofd.MetaFileName)));
                         Console.Clear();
                         //判断il2cpp的magic
                         var il2cppMagic = BitConverter.ToUInt32(il2cppfile, 0);
@@ -491,7 +486,6 @@ namespace Il2CppDumper
                     }
                     Console.WriteLine("Press any key to exit...");
                     Console.ReadKey(true);
-                }
             }
         }
 
@@ -663,6 +657,21 @@ namespace Il2CppDumper
                 }
             }
             return re.ToString();
+        }
+
+        private class ArgParser
+        {
+            public ArgParser(string[] args)
+            {
+                if (args.Length != 2) return;
+                FileName = args[0];
+                MetaFileName = args[1];
+                Valid = true;
+            }
+            
+            public bool Valid { get; private set; }
+            public string FileName { get; private set; }
+            public string MetaFileName { get; private set; }
         }
     }
 }
